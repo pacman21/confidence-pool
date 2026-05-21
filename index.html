@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=no">
+  <title>World Cup Confidence Pool Builder</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --accent: #2563eb;
+      --text: #f8fafc;
+      --muted: #64748b;
+      --success: #16a34a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 16px;
+    }
+    .section {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      border: 1px solid #334155;
+    }
+    h2 { font-size: 1.1rem; margin-bottom: 12px; color: #94a3b8; }
+    .form-group { margin-bottom: 12px; }
+    label { display: block; margin-bottom: 4px; font-size: 0.85rem; font-weight: 600; }
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      background: #0f172a;
+      color: var(--text);
+      font-size: 1rem;
+      -webkit-appearance: none;
+    }
+    
+    /* Pool Layout */
+    .search-bar { margin-bottom: 10px; }
+    .pool-scroll {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-height: 180px;
+      overflow-y: auto;
+      padding: 4px;
+    }
+    .badge {
+      padding: 8px 14px;
+      background: #334155;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .badge.selected { display: none; }
+
+    /* Bucket Layout */
+    .bucket-row {
+      display: flex;
+      align-items: center;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 8px;
+      margin-bottom: 8px;
+    }
+    .rank-num { width: 45px; font-weight: bold; color: var(--muted); font-size: 0.85rem; }
+    .team-name { flex: 1; font-weight: 500; }
+    .controls { display: flex; gap: 4px; }
+    .btn {
+      padding: 6px 10px;
+      background: #334155;
+      border: none;
+      color: white;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    .btn-remove { background: #7f1d1d; }
+    
+    .submit-btn {
+      width: 100%;
+      padding: 16px;
+      background: var(--success);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Confidence Pool Setup</h1>
+  <p style="color: var(--muted); margin-bottom: 20px; font-size:0.9rem;">Tap a team to add it. Reorder inside your top 16 list.</p>
+
+  <form id="submissionForm">
+    <!-- Part 1: Context Metadata Fields -->
+    <div class="section">
+      <div class="form-group">
+        <label>Enter your name (So I Know Who You Are)</label>
+        <input type="text" id="username" required>
+      </div>
+      <div class="form-group">
+        <label>Enter your email (So I can send you updates)</label>
+        <input type="email" id="email" required>
+      </div>
+      <div class="form-group">
+        <label>For tie break: total tournament goals scored</label>
+        <input type="text" inputmode="decimal" pattern="[0-9]*" id="tiebreaker" placeholder="e.g. 171" required>
+      </div>
+    </div>
+
+    <!-- Part 2: Master Team Selection Pool -->
+    <h2>1. Available Teams</h2>
+    <div class="section">
+      <input type="text" class="search-bar" id="search" placeholder="Filter countries...">
+      <div class="pool-scroll" id="teamsPool"></div>
+    </div>
+
+    <!-- Part 3: Sorted Output Basket List -->
+    <h2>2. Your Top 16 Rankings (<span id="count">0</span>/16)</h2>
+    <div class="section" id="rankingBucket" style="min-height: 100px;"></div>
+
+    <button type="submit" class="submit-btn">Submit Tournament Picks</button>
+  </form>
+
+  <script>
+    const countries = ["Algeria", "Argentina", "Australia", "Austria", "Belgium", "Bosnia and Herzegovina", "Brazil", "Canada", "Cape Verde", "Colombia", "Croatia", "Curaçao", "Czech Republic", "DR Congo", "Ecuador", "Egypt", "England", "France", "Germany", "Ghana", "Haiti", "Iran", "Iraq", "Ivory Coast", "Japan", "Jordan", "Mexico", "Morocco", "Netherlands", "New Zealand", "Norway", "Panama", "Paraguay", "Portugal", "Qatar", "Saudi Arabia", "Scotland", "Senegal", "South Africa", "South Korea", "Spain", "Sweden", "Switzerland", "Tunisia", "Türkiye", "United States", "Uruguay", "Uzbekistan"];
+    let selectedTeams = [];
+
+    // Initialize Pool
+    const pool = document.getElementById('teamsPool');
+    function renderPool() {
+      pool.innerHTML = countries.map(c => `<div class="badge ${selectedTeams.includes(c)?'selected':''}" data-name="${c}">${c}</div>`).join('');
+    }
+    renderPool();
+
+    // Search Engine Filter
+    document.getElementById('search').addEventListener('input', (e) => {
+      const term = e.target.value.toLowerCase();
+      document.querySelectorAll('#teamsPool .badge').forEach(b => {
+        b.style.display = b.innerText.toLowerCase().includes(term) && !selectedTeams.includes(b.innerText) ? 'block' : 'none';
+      });
+    });
+
+    // Add Target Action Selection Logic
+    pool.addEventListener('click', (e) => {
+      if (!e.target.classList.contains('badge') || selectedTeams.length >= 16) return;
+      const name = e.target.getAttribute('data-name');
+      selectedTeams.push(name);
+      renderPool();
+      renderBucket();
+    });
+
+    // Render Dynamic Bucketing Re-ordering List
+    const bucket = document.getElementById('rankingBucket');
+    function renderBucket() {
+      document.getElementById('count').innerText = selectedTeams.length;
+      bucket.innerHTML = selectedTeams.map((team, idx) => `
+        <div class="bucket-row" data-idx="${idx}">
+          <span class="rank-num">#${idx + 1}</span>
+          <span class="team-name">${team}</span>
+          <div class="controls">
+            <button type="button" class="btn" onclick="move(${idx}, -1)">▲</button>
+            <button type="button" class="btn" onclick="move(${idx}, 1)">▼</button>
+            <button type="button" class="btn btn-remove" onclick="removeTeam(${idx})">✕</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    window.move = (index, direction) => {
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= selectedTeams.length) return;
+      const temp = selectedTeams[index];
+      selectedTeams[index] = selectedTeams[targetIndex];
+      selectedTeams[targetIndex] = temp;
+      renderBucket();
+    };
+
+    window.removeTeam = (index) => {
+      selectedTeams.splice(index, 1);
+      renderPool();
+      renderBucket();
+    };
+
+    // Submitting Data to Apps Script API Execution Endpoint
+    document.getElementById('submissionForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (selectedTeams.length !== 16) {
+        alert('Please select exactly 16 teams before submitting.');
+        return;
+      }
+
+      const payload = {
+        name: document.getElementById('username').value,
+        email: document.getElementById('email').value,
+        tiebreaker: document.getElementById('tiebreaker').value,
+        rankings: selectedTeams
+      };
+
+      // REPLACE WITH YOUR APPS SCRIPT WEB APP DEPLOYMENT URL
+      const ENDPOINT = "https://script.google.com/macros/s/.../exec";
+
+      try {
+        const response = await fetch(ENDPOINT, {
+          method: 'POST',
+          mode: 'no-cors', // Bypasses CORS browser challenges with Google Scripts
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        alert('Picks Submitted Successfully! Good luck!');
+      } catch (err) {
+        alert('Error parsing submission code payload: ' + err.message);
+      }
+    });
+  </script>
+</body>
+</html>
