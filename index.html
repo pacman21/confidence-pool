@@ -85,16 +85,27 @@
     .btn-remove { background: #7f1d1d; }
     
     .submit-btn {
-      width: 100%;
-      padding: 16px;
-      background: var(--success);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 1.1rem;
-      font-weight: bold;
-      margin-top: 10px;
-    }
+  width: 100%;
+  padding: 16px;
+  background: var(--success);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin-top: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease; /* Makes the transition smooth */
+}
+
+/* Add this new state block */
+.submit-btn:disabled {
+  background: #334155 !important; /* Changes green to a muted gray */
+  color: #94a3b8;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+    
   </style>
 </head>
 <body>
@@ -130,7 +141,7 @@
     <h2>2. Your Top 16 Rankings (<span id="count">0</span>/16)</h2>
     <div class="section" id="rankingBucket" style="min-height: 100px;"></div>
 
-    <button type="submit" class="submit-btn">Submit Tournament Picks</button>
+    <button type="submit" id="submitBtn" class="submit-btn">Submit Tournament Picks</button>
   </form>
 
   <script>
@@ -201,6 +212,10 @@
         return;
       }
 
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.innerText = "Submitting Picks... Please Wait";
+      
       const payload = {
         name: document.getElementById('username').value,
         email: document.getElementById('email').value,
@@ -218,6 +233,8 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
+
+        submitBtn.innerText = "✓ Submitted Successfully!";
         alert('Picks Submitted Successfully! Good luck!');
       } catch (err) {
         alert('Error parsing submission code payload: ' + err.message);
