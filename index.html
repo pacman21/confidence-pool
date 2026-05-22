@@ -111,7 +111,12 @@
 <body>
 
   <h1>Confidence Pool Setup</h1>
-  <p style="color: var(--muted); margin-bottom: 20px; font-size:0.9rem;">Tap a team to add it. Reorder inside your top 16 list.</p>
+  <p style="color: var(--muted); margin-bottom: 20px; font-size:0.9rem;">Out of the teams in the World Cup, you will rank 16 of them. Rank them in the order that you think will generate the most points thru the entire World Cup. The team you believe will win the most matches should be ranked 16, the second 15, etc. In the event of a tie, we will use the Total Final Goals value entered.</p>
+  <p style="color: var(--muted); margin-bottom: 20px; font-size:0.9rem;">
+    For example:<br>
+    For your team ranked 16, you will get 48 points for a win, 16 points for a tie, and 0 points for a loss.<br>     
+    For your team ranked 15, you will get 45 points for a win, 15 points for a tie, and 0 points for a loss.<br>
+  </p>
 
   <form id="submissionForm">
     <!-- Part 1: Context Metadata Fields -->
@@ -131,14 +136,14 @@
     </div>
 
     <!-- Part 2: Master Team Selection Pool -->
-    <h2>1. Available Teams</h2>
+    <h2>1. Select your top 16 teams from the list below. They will be added to another list where you will be able to sort them.</h2>
     <div class="section">
       <input type="text" class="search-bar" id="search" placeholder="Filter countries...">
       <div class="pool-scroll" id="teamsPool"></div>
     </div>
 
     <!-- Part 3: Sorted Output Basket List -->
-    <h2>2. Your Top 16 Rankings (<span id="count">0</span>/16)</h2>
+    <h2>Sort your top 16 teams in 1 to 16 ranking. (<span id="count">0</span>/16) Teams Select</h2>
     <div class="section" id="rankingBucket" style="min-height: 100px;"></div>
 
     <button type="submit" id="submitBtn" class="submit-btn">Submit Tournament Picks</button>
